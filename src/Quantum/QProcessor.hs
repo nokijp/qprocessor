@@ -1,6 +1,11 @@
 module Quantum.QProcessor
-  ( dummy
+  ( Coef
+  , Matrix(..)
+  , Transition(..)
   ) where
 
-dummy :: a -> a
-dummy = id
+import Data.Complex
+
+type Coef = Complex Double
+data Matrix = Matrix Coef Coef Coef Coef deriving (Show, Eq)
+data Transition = Transition Matrix [Int] Int deriving (Show, Eq)

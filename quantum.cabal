@@ -1,0 +1,23 @@
+name:                quantum
+version:             0.1.0.0
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Quantum.QProcessor
+  build-depends:       base >= 4.7 && < 5
+                     , parsec == 3.*
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O
+  default-language:    Haskell2010
+
+test-suite quantum-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:       Quantum.QProcessorSpec
+  build-depends:       base >= 4.7 && < 5
+                     , hspec == 2.*
+                     , quantum
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
+  default-language:    Haskell2010

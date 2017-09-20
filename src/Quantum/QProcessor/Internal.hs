@@ -1,5 +1,8 @@
 module Quantum.QProcessor.Internal
-  ( Transition(..)
+  ( Coef
+  , Matrix(..)
+  , Transition(..)
+  , QVar(..)
   , QState(..)
   , QSingle(..)
   , amplitude
@@ -9,13 +12,17 @@ module Quantum.QProcessor.Internal
   , measure
   ) where
 
-import Quantum.QProcessor
-
 import Control.Monad.State
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
 import Data.Bits
 import Data.Complex
+
+type Coef = Complex Double
+data Matrix = Matrix Coef Coef Coef Coef deriving (Show, Eq)
+data Transition = Transition Matrix [QVar] QVar deriving (Show, Eq)
+
+newtype QVar = QVar Int deriving (Show, Eq)
 
 newtype QState = QState (Vector Coef) deriving (Show, Eq)
 data QSingle = QSingle Coef Coef deriving (Show, Eq)
@@ -33,19 +40,19 @@ runTransition :: Monad m => Transition -> StateT QState m ()
 runTransition = modify . transition
   where
     transition :: Transition -> QState -> QState
-    transition (Transition (Matrix m00 m01 m10 m11) cs t) (QState ss) = QState $ V.imap transitionBit ss
+    transition (Transition (Matrix m00 m01 m10 m11) cs (QVar t)) (QState ss) = QState $ V.imap transitionBit ss
       where
         transitionBit n s =
           if n .&. controllerMask == controllerMask
           then multiplyMat (n .&. targetMask == 0) s (ss V.! (n `xor` targetMask))
           else s
-        controllerMask = sum ((1 `shift`) <$> cs)
+        controllerMask = sum ((\(QVar c) -> 1 `shift` c) <$> cs)
         targetMask = 1 `shift` t
         multiplyMat True  s0 s1 = m00 * s0 + m01 * s1
         multiplyMat False s1 s0 = m10 * s0 + m11 * s1
 
-measure :: Monad m => m Double -> Int -> StateT QState m Bool
-measure rand t = do
+measure :: Monad m => m Double -> QVar -> StateT QState m Bool
+measure rand qv@(QVar t) = do
     QState ss <- get
 
     let (indexedSs1, indexedSs0) = V.unstablePartition (targetBit . fst) (V.indexed ss)
@@ -57,7 +64,7 @@ measure rand t = do
     let b = r >= normalizedP0
     let reductionMatrix = if b then Matrix 0 0 0 (1 / p1 :+ 0) else Matrix (1 / p0 :+ 0) 0 0 0
 
-    runTransition $ Transition reductionMatrix [] t
+    runTransition $ Transition reductionMatrix [] qv
     return b
   where
     targetBit n = (n `shift` (-t)) .&. 1 == 1

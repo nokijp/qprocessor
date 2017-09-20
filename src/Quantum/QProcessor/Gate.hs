@@ -4,16 +4,16 @@ module Quantum.QProcessor.Gate
   , toffoli
   ) where
 
-import Quantum.QProcessor
+import Quantum.QProcessor.Internal
 
-hadamard :: Int -> Transition
+hadamard :: QVar -> Transition
 hadamard = Transition (Matrix (sqrt 2 / 2) (sqrt 2 / 2) (sqrt 2 / 2) (- sqrt 2 / 2)) []
 
 notMatrix :: Matrix
 notMatrix = Matrix 0 1 1 0
 
-cnot :: Int -> Int -> Transition
+cnot :: QVar -> QVar -> Transition
 cnot controller = Transition notMatrix [controller]
 
-toffoli :: Int -> Int -> Int -> Transition
+toffoli :: QVar -> QVar -> QVar -> Transition
 toffoli controller1 controller2 = Transition notMatrix [controller1, controller2]

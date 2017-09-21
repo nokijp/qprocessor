@@ -7,11 +7,11 @@ import Quantum.QProcessor.Gate
 import Quantum.QProcessor.Manipulator
 
 {-
-q0: |0>--H--*--*--s0==
+q0: |0>--H--*--*--@==
             |  |
-q1: |1>-----*--⊕--s1==
+q1: |1>-----*--⊕--@==
             |
-q2: |0>-----⊕-----s2==
+q2: |0>-----⊕-----@==
 -}
 program :: Manipulator [Bool]
 program = do

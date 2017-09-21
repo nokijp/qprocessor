@@ -43,16 +43,16 @@ spec = do
 
   describe "measureState" $ do
     forM_
-      [ (0.99, QVar 0, QState 1 (V.fromList [1, 0]), QState 1 (V.fromList [1, 0]), False)
-      , (0.0, QVar 0, QState 1 (V.fromList [1, 0]), QState 1 (V.fromList [1, 0]), False)
-      , (0.99, QVar 0, QState 1 (V.fromList [0, 1]), QState 1 (V.fromList [0, 1]), True)
-      , (0.0, QVar 0, QState 1 (V.fromList [0, 1]), QState 1 (V.fromList [0, 1]), True)
-      , (0.49, QVar 0, QState 1 (V.fromList [sqrt 2 / 2, sqrt 2 / 2]), QState 1 (V.fromList [1, 0]), False)
-      , (0.51, QVar 0, QState 1 (V.fromList [sqrt 2 / 2, sqrt 2 / 2]), QState 1 (V.fromList [0, 1]), True)
-      , (0.49, QVar 0, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [sqrt 2 / 2, 0, sqrt 2 / 2, 0]), False)
-      , (0.51, QVar 0, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [0, sqrt 2 / 2, 0, sqrt 2 / 2]), True)
-      , (0.49, QVar 1, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [sqrt 2 / 2, sqrt 2 / 2, 0, 0]), False)
-      , (0.51, QVar 1, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [0, 0, sqrt 2 / 2, sqrt 2 / 2]), True)
+      [ (0.99, QVar 0, QState 1 (V.fromList [1, 0]), QState 1 (V.fromList [1, 0]), Zero)
+      , (0.0, QVar 0, QState 1 (V.fromList [1, 0]), QState 1 (V.fromList [1, 0]), Zero)
+      , (0.99, QVar 0, QState 1 (V.fromList [0, 1]), QState 1 (V.fromList [0, 1]), One)
+      , (0.0, QVar 0, QState 1 (V.fromList [0, 1]), QState 1 (V.fromList [0, 1]), One)
+      , (0.49, QVar 0, QState 1 (V.fromList [sqrt 2 / 2, sqrt 2 / 2]), QState 1 (V.fromList [1, 0]), Zero)
+      , (0.51, QVar 0, QState 1 (V.fromList [sqrt 2 / 2, sqrt 2 / 2]), QState 1 (V.fromList [0, 1]), One)
+      , (0.49, QVar 0, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [sqrt 2 / 2, 0, sqrt 2 / 2, 0]), Zero)
+      , (0.51, QVar 0, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [0, sqrt 2 / 2, 0, sqrt 2 / 2]), One)
+      , (0.49, QVar 1, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [sqrt 2 / 2, sqrt 2 / 2, 0, 0]), Zero)
+      , (0.51, QVar 1, QState 2 (V.fromList [1 / 2, 1 / 2, 1 / 2, 1 / 2]), QState 2 (V.fromList [0, 0, sqrt 2 / 2, sqrt 2 / 2]), One)
       ] $ \(rand, target, initial, expectedFinal@(QState expectedN expectedSs), expectedBit) ->
       it ("should return " ++ show (expectedBit, expectedFinal) ++ " when measure " ++ show target ++ " on " ++ show initial) $ do
         let (actualBit, QState actualN actualSs) = runState (measureState (Identity rand) target) initial

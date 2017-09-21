@@ -48,7 +48,7 @@ transitionState = modify . transition
         multiplyMat True  s0 s1 = m00 * s0 + m01 * s1
         multiplyMat False s1 s0 = m10 * s0 + m11 * s1
 
-measureState :: Monad m => m Double -> QVar -> StateT QState m Bool
+measureState :: Monad m => m Double -> QVar -> StateT QState m Bit
 measureState rand qv@(QVar t) = do
   QState _ ss <- get
 
@@ -58,8 +58,8 @@ measureState rand qv@(QVar t) = do
   let normalizedP0 = p0 / (p0 + p1)
 
   r <- lift rand
-  let b = r >= normalizedP0
-  let reductionMatrix = if b then Matrix 0 0 0 (1 / p1 :+ 0) else Matrix (1 / p0 :+ 0) 0 0 0
+  let b = boolToBit $ r >= normalizedP0
+  let reductionMatrix = ifBit b (Matrix (1 / p0 :+ 0) 0 0 0) (Matrix 0 0 0 (1 / p1 :+ 0))
 
   transitionState $ Transition reductionMatrix [] qv
   return b

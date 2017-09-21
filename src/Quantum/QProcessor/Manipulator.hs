@@ -20,20 +20,20 @@ import qualified Data.Vector.Unboxed as V
 import System.Random
 
 data ManipulatorI a where
-  NewQVarInstr :: Bool -> ManipulatorI QVar
+  NewQVarInstr :: Bit -> ManipulatorI QVar
   TransitionInstr :: Transition -> ManipulatorI ()
-  MeasureInstr :: QVar -> ManipulatorI Bool
+  MeasureInstr :: QVar -> ManipulatorI Bit
   SpyStateInstr :: ManipulatorI [Coef]
   SpyProbsInstr :: ManipulatorI [Double]
 type Manipulator a = Program ManipulatorI a
 
-newQVar :: Bool -> Manipulator QVar
+newQVar :: Bit -> Manipulator QVar
 newQVar = singleton . NewQVarInstr
 
 transition :: Transition -> Manipulator ()
 transition = singleton . TransitionInstr
 
-measure :: QVar -> Manipulator Bool
+measure :: QVar -> Manipulator Bit
 measure = singleton . MeasureInstr
 
 spyState :: Manipulator [Coef]
@@ -53,7 +53,7 @@ runManipulatorWithRandom rand manip = evalStateT (run rand manip) emptyQState
     eval :: Monad m => m Double -> ProgramView ManipulatorI a -> StateT QState m a
     eval r (NewQVarInstr b :>>= k) = do
       qs <- get
-      let q = if b then QSingle 0 1 else QSingle 1 0
+      let q = ifBit b (QSingle 1 0) (QSingle 0 1)
       let qs'@(QState n' _) = qs `productQState` q
       put qs'
       run r $ k (QVar $ n' - 1)

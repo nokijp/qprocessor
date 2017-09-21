@@ -1,16 +1,14 @@
 module Quantum.QProcessor.Internal
-  ( Coef
-  , Matrix(..)
-  , Transition(..)
-  , QVar(..)
-  , QState(..)
+  ( QState(..)
   , QSingle(..)
-  , amplitude
+  , emptyQState
   , fromSingle
-  , productState
-  , runTransition
-  , measure
+  , productQState
+  , transitionState
+  , measureState
   ) where
+
+import Quantum.QProcessor
 
 import Control.Monad.State
 import Data.Vector.Unboxed (Vector)
@@ -18,42 +16,37 @@ import qualified Data.Vector.Unboxed as V
 import Data.Bits
 import Data.Complex
 
-type Coef = Complex Double
-data Matrix = Matrix Coef Coef Coef Coef deriving (Show, Eq)
-data Transition = Transition Matrix [QVar] QVar deriving (Show, Eq)
-
-newtype QVar = QVar Int deriving (Show, Eq)
-
-newtype QState = QState (Vector Coef) deriving (Show, Eq)
+data QState = QState Int (Vector Coef) deriving (Show, Eq)
 data QSingle = QSingle Coef Coef deriving (Show, Eq)
 
-amplitude :: Coef -> Double
-amplitude c = magnitude c * magnitude c
+emptyQState :: QState
+emptyQState = QState 0 V.empty
 
 fromSingle :: QSingle -> QState
-fromSingle (QSingle s0 s1) = QState (V.fromList [s0, s1])
+fromSingle (QSingle s0 s1) = QState 1 (V.fromList [s0, s1])
 
-productState :: QState -> QSingle -> QState
-productState (QState ss) (QSingle s0 s1) = QState $ V.map (* s0) ss V.++ V.map (* s1) ss
+productQState :: QState -> QSingle -> QState
+productQState (QState 0 _)  (QSingle s0 s1) = QState 1 $ V.fromList [s0, s1]
+productQState (QState n ss) (QSingle s0 s1) = QState (n + 1) $ V.map (* s0) ss V.++ V.map (* s1) ss
 
-runTransition :: Monad m => Transition -> StateT QState m ()
-runTransition = modify . transition
+transitionState :: Monad m => Transition -> StateT QState m ()
+transitionState = modify . transition
   where
     transition :: Transition -> QState -> QState
-    transition (Transition (Matrix m00 m01 m10 m11) cs (QVar t)) (QState ss) = QState $ V.imap transitionBit ss
+    transition (Transition (Matrix m00 m01 m10 m11) cs (QVar t)) (QState n ss) = QState n $ V.imap transitionBit ss
       where
-        transitionBit n s =
-          if n .&. controllerMask == controllerMask
-          then multiplyMat (n .&. targetMask == 0) s (ss V.! (n `xor` targetMask))
+        transitionBit m s =
+          if m .&. controllerMask == controllerMask
+          then multiplyMat (m .&. targetMask == 0) s (ss V.! (m `xor` targetMask))
           else s
         controllerMask = sum ((\(QVar c) -> 1 `shift` c) <$> cs)
         targetMask = 1 `shift` t
         multiplyMat True  s0 s1 = m00 * s0 + m01 * s1
         multiplyMat False s1 s0 = m10 * s0 + m11 * s1
 
-measure :: Monad m => m Double -> QVar -> StateT QState m Bool
-measure rand qv@(QVar t) = do
-    QState ss <- get
+measureState :: Monad m => m Double -> QVar -> StateT QState m Bool
+measureState rand qv@(QVar t) = do
+    QState _ ss <- get
 
     let (indexedSs1, indexedSs0) = V.unstablePartition (targetBit . fst) (V.indexed ss)
     let p0 = prob indexedSs0
@@ -64,8 +57,9 @@ measure rand qv@(QVar t) = do
     let b = r >= normalizedP0
     let reductionMatrix = if b then Matrix 0 0 0 (1 / p1 :+ 0) else Matrix (1 / p0 :+ 0) 0 0 0
 
-    runTransition $ Transition reductionMatrix [] qv
+    transitionState $ Transition reductionMatrix [] qv
     return b
   where
+    amplitude c = magnitude c * magnitude c
     targetBit n = (n `shift` (-t)) .&. 1 == 1
     prob = sqrt . V.sum . V.map (amplitude . snd)

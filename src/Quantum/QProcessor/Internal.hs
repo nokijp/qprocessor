@@ -46,20 +46,20 @@ transitionState = modify . transition
 
 measureState :: Monad m => m Double -> QVar -> StateT QState m Bool
 measureState rand qv@(QVar t) = do
-    QState _ ss <- get
+  QState _ ss <- get
 
-    let (indexedSs1, indexedSs0) = V.unstablePartition (targetBit . fst) (V.indexed ss)
-    let p0 = prob indexedSs0
-    let p1 = prob indexedSs1
-    let normalizedP0 = p0 / (p0 + p1)
+  let (indexedSs1, indexedSs0) = V.unstablePartition (targetBit . fst) (V.indexed ss)
+  let p0 = prob indexedSs0
+  let p1 = prob indexedSs1
+  let normalizedP0 = p0 / (p0 + p1)
 
-    r <- lift rand
-    let b = r >= normalizedP0
-    let reductionMatrix = if b then Matrix 0 0 0 (1 / p1 :+ 0) else Matrix (1 / p0 :+ 0) 0 0 0
+  r <- lift rand
+  let b = r >= normalizedP0
+  let reductionMatrix = if b then Matrix 0 0 0 (1 / p1 :+ 0) else Matrix (1 / p0 :+ 0) 0 0 0
 
-    transitionState $ Transition reductionMatrix [] qv
-    return b
-  where
-    amplitude c = magnitude c * magnitude c
-    targetBit n = (n `shift` (-t)) .&. 1 == 1
-    prob = sqrt . V.sum . V.map (amplitude . snd)
+  transitionState $ Transition reductionMatrix [] qv
+  return b
+    where
+      amplitude c = magnitude c * magnitude c
+      targetBit n = (n `shift` (-t)) .&. 1 == 1
+      prob = sqrt . V.sum . V.map (amplitude . snd)

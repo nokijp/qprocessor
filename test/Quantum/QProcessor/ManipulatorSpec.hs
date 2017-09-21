@@ -28,7 +28,7 @@ spec = do
       , (newQVar False >> newQVar True, [0, 0, 1, 0])
       ] $ \(program, ss) ->
       it ("should create a new qubit " ++ show ss) $
-        runManipulatorWithRandom (Identity 1) (program >> inspectState) `shouldBe` Identity ss
+        runManipulatorWithRandom (Identity 0) (program >> spyState) `shouldBe` Identity ss
 
   describe "measure" $ do
     forM_
@@ -37,6 +37,14 @@ spec = do
       ] $ \(rand, program, output) ->
       it ("can measure a qubit with a random value " ++ show rand) $
         runManipulatorWithRandom (Identity rand) program `shouldBe` Identity output
+
+  describe "spyProbs" $ do
+    forM_
+      [ (newQVar False >> spyProbs, [1, 0])
+      , (newQVar False >>= transition . hadamard >> spyProbs, [1 / 2, 1 / 2])
+      ] $ \(program, probs) ->
+      it ("can spy probabilities " ++ show probs) $
+        runIdentity (runManipulatorWithRandom (Identity 0) program) `shouldSatisfy` toleranceEqList 1e-5 probs
 
   describe "runManipulator" $ do
     forM_
@@ -55,15 +63,15 @@ measuringProgram = do
 complexProgram :: Manipulator [[Coef]]
 complexProgram = do
   q0 <- newQVar False
-  s1 <- inspectState
+  s1 <- spyState
   transition $ pauliX q0
-  s2 <- inspectState
+  s2 <- spyState
   q1 <- newQVar False
-  s3 <- inspectState
+  s3 <- spyState
   transition $ hadamard q1
-  s4 <- inspectState
+  s4 <- spyState
   _ <- measure q1
-  s5 <- inspectState
+  s5 <- spyState
   return [s1, s2, s3, s4, s5]
 
 complexProgramOutput :: Bool -> [[Coef]]

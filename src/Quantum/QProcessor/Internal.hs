@@ -1,6 +1,7 @@
 module Quantum.QProcessor.Internal
   ( QState(..)
   , QSingle(..)
+  , amplitude
   , emptyQState
   , fromSingle
   , productQState
@@ -15,6 +16,9 @@ import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
 import Data.Bits
 import Data.Complex
+
+amplitude :: Coef -> Double
+amplitude c = magnitude c * magnitude c
 
 data QState = QState Int (Vector Coef) deriving (Show, Eq)
 data QSingle = QSingle Coef Coef deriving (Show, Eq)
@@ -60,6 +64,5 @@ measureState rand qv@(QVar t) = do
   transitionState $ Transition reductionMatrix [] qv
   return b
     where
-      amplitude c = magnitude c * magnitude c
       targetBit n = (n `shift` (-t)) .&. 1 == 1
       prob = sqrt . V.sum . V.map (amplitude . snd)

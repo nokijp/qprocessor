@@ -5,7 +5,8 @@ module Quantum.QProcessor.Manipulator
   , newQVar
   , transition
   , measure
-  , inspectState
+  , spyState
+  , spyProbs
   , runManipulator
   , runManipulatorWithRandom
   ) where
@@ -22,7 +23,8 @@ data ManipulatorI a where
   NewQVarInstr :: Bool -> ManipulatorI QVar
   TransitionInstr :: Transition -> ManipulatorI ()
   MeasureInstr :: QVar -> ManipulatorI Bool
-  InspectStateInstr :: ManipulatorI [Coef]
+  SpyStateInstr :: ManipulatorI [Coef]
+  SpyProbsInstr :: ManipulatorI [Double]
 type Manipulator a = Program ManipulatorI a
 
 newQVar :: Bool -> Manipulator QVar
@@ -34,8 +36,11 @@ transition = singleton . TransitionInstr
 measure :: QVar -> Manipulator Bool
 measure = singleton . MeasureInstr
 
-inspectState :: Manipulator [Coef]
-inspectState = singleton InspectStateInstr
+spyState :: Manipulator [Coef]
+spyState = singleton SpyStateInstr
+
+spyProbs :: Manipulator [Double]
+spyProbs = singleton SpyProbsInstr
 
 runManipulator :: Manipulator a -> IO a
 runManipulator = runManipulatorWithRandom randomIO
@@ -54,7 +59,10 @@ runManipulatorWithRandom rand manip = evalStateT (run rand manip) emptyQState
       run r $ k (QVar $ n' - 1)
     eval r (TransitionInstr t :>>= k) = transitionState t >> run r (k ())
     eval r (MeasureInstr q :>>= k) = measureState r q >>= run r . k
-    eval r (InspectStateInstr :>>= k) = do
+    eval r (SpyStateInstr :>>= k) = do
       QState _ ss <- get
       run r $ k (V.toList ss)
+    eval r (SpyProbsInstr :>>= k) = do
+      QState _ ss <- get
+      run r $ k (amplitude <$> V.toList ss)
     eval _ (Return x) = return x

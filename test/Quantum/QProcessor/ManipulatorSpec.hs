@@ -27,32 +27,32 @@ spec = do
       , (newQVar One, [0, 1])
       , (newQVar Zero >> newQVar One, [0, 0, 1, 0])
       ] $ \(program, ss) ->
-      it ("should create a new qubit " ++ show ss) $
-        runManipulatorWithRandom (Identity 0) (program >> spyState) `shouldBe` Identity ss
+        it ("should create a new qubit " ++ show ss) $
+          runManipulatorWithRandom (Identity 0) (program >> spyState) `shouldBe` Identity ss
 
   describe "measure" $ do
     forM_
       [ (0, measuringProgram, Zero)
       , (0.99, measuringProgram, One)
       ] $ \(rand, program, output) ->
-      it ("can measure a qubit with a random value " ++ show rand) $
-        runManipulatorWithRandom (Identity rand) program `shouldBe` Identity output
+        it ("can measure a qubit with a random value " ++ show rand) $
+          runManipulatorWithRandom (Identity rand) program `shouldBe` Identity output
 
   describe "spyProbs" $ do
     forM_
       [ (newQVar Zero >> spyProbs, [1, 0])
       , (newQVar One >>= transition . hadamard >> spyProbs, [1 / 2, 1 / 2])
       ] $ \(program, probs) ->
-      it ("can spy probabilities " ++ show probs) $
-        runIdentity (runManipulatorWithRandom (Identity 0) program) `shouldSatisfy` toleranceEqList 1e-5 probs
+        it ("can spy probabilities " ++ show probs) $
+          runIdentity (runManipulatorWithRandom (Identity 0) program) `shouldSatisfy` toleranceEqList 1e-5 probs
 
   describe "runManipulator" $ do
     forM_
       [ (0, complexProgram, complexProgramOutput Zero)
       , (0.99, complexProgram, complexProgramOutput One)
       ] $ \(rand, program, output) ->
-      it ("should run properly complexProgram with a random value " ++ show rand) $
-        runIdentity (runManipulatorWithRandom (Identity rand) program) `shouldSatisfy` all id . zipWith (toleranceEqList 1e-5) output
+        it ("should run properly complexProgram with a random value " ++ show rand) $
+          runIdentity (runManipulatorWithRandom (Identity rand) program) `shouldSatisfy` all id . zipWith (toleranceEqList 1e-5) output
 
 measuringProgram :: Manipulator Bit
 measuringProgram = do

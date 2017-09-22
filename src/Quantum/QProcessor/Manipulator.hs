@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, GeneralizedNewtypeDeriving #-}
 
 module Quantum.QProcessor.Manipulator
   ( Manipulator
@@ -25,22 +25,22 @@ data ManipulatorI a where
   MeasureInstr :: QVar -> ManipulatorI Bit
   SpyStateInstr :: ManipulatorI [Coef]
   SpyProbsInstr :: ManipulatorI [Double]
-type Manipulator a = Program ManipulatorI a
+newtype Manipulator a = Manipulator { raw :: Program ManipulatorI a } deriving (Functor, Applicative, Monad)
 
 newQVar :: Bit -> Manipulator QVar
-newQVar = singleton . NewQVarInstr
+newQVar = Manipulator . singleton . NewQVarInstr
 
 transition :: Transition -> Manipulator ()
-transition = singleton . TransitionInstr
+transition = Manipulator . singleton . TransitionInstr
 
 measure :: QVar -> Manipulator Bit
-measure = singleton . MeasureInstr
+measure = Manipulator . singleton . MeasureInstr
 
 spyState :: Manipulator [Coef]
-spyState = singleton SpyStateInstr
+spyState = Manipulator $ singleton SpyStateInstr
 
 spyProbs :: Manipulator [Double]
-spyProbs = singleton SpyProbsInstr
+spyProbs = Manipulator $ singleton SpyProbsInstr
 
 runManipulator :: Manipulator a -> IO a
 runManipulator = runManipulatorWithRandom randomIO
@@ -49,20 +49,20 @@ runManipulatorWithRandom :: Monad m => m Double -> Manipulator a -> m a
 runManipulatorWithRandom rand manip = evalStateT (run rand manip) emptyQState
   where
     run :: Monad m => m Double -> Manipulator a -> StateT QState m a
-    run r = eval r . view
+    run r = eval r . view . raw
     eval :: Monad m => m Double -> ProgramView ManipulatorI a -> StateT QState m a
     eval r (NewQVarInstr b :>>= k) = do
       qs <- get
       let q = ifBit b (QSingle 1 0) (QSingle 0 1)
       let qs'@(QState n' _) = qs `productQState` q
       put qs'
-      run r $ k (QVar $ n' - 1)
-    eval r (TransitionInstr t :>>= k) = transitionState t >> run r (k ())
-    eval r (MeasureInstr q :>>= k) = measureState r q >>= run r . k
+      run r $ Manipulator $ k (QVar $ n' - 1)
+    eval r (TransitionInstr t :>>= k) = transitionState t >> run r (Manipulator (k ()))
+    eval r (MeasureInstr q :>>= k) = measureState r q >>= run r . Manipulator. k
     eval r (SpyStateInstr :>>= k) = do
       QState _ ss <- get
-      run r $ k (V.toList ss)
+      run r $ Manipulator $ k (V.toList ss)
     eval r (SpyProbsInstr :>>= k) = do
       QState _ ss <- get
-      run r $ k (amplitude <$> V.toList ss)
+      run r $ Manipulator $ k (amplitude <$> V.toList ss)
     eval _ (Return x) = return x

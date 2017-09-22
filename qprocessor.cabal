@@ -23,6 +23,7 @@ test-suite qprocessor-test
   main-is:             Spec.hs
   other-modules:       TestUtils
                      , Quantum.QProcessorSpec
+                     , Quantum.QProcessor.GateSpec
                      , Quantum.QProcessor.InternalSpec
                      , Quantum.QProcessor.ManipulatorSpec
   build-depends:       base >= 4.7 && < 5

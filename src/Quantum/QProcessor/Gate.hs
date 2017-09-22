@@ -5,11 +5,13 @@ module Quantum.QProcessor.Gate
   , pauliZ
   , cnot
   , toffoli
+  , phase
+  , control
   ) where
 
 import Quantum.QProcessor
 
-import Data.Complex
+import Data.Complex hiding (phase)
 
 hadamard :: QVar -> Transition
 hadamard = Transition (Matrix (sqrt 2 / 2) (sqrt 2 / 2) (sqrt 2 / 2) (- sqrt 2 / 2)) []
@@ -31,3 +33,12 @@ cnot controller = Transition pauliXMatrix [controller]
 
 toffoli :: QVar -> QVar -> QVar -> Transition
 toffoli controller1 controller2 = Transition pauliXMatrix [controller1, controller2]
+
+phaseMatrix :: Double -> Matrix
+phaseMatrix t = Matrix 1 0 0 (exp (0 :+ t))
+
+phase :: Double -> QVar -> Transition
+phase t = Transition (phaseMatrix t) []
+
+control :: QVar -> Transition -> Transition
+control c (Transition m cs t) = Transition m (c:cs) t

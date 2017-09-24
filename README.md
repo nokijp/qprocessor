@@ -8,11 +8,11 @@ import Quantum.QProcessor.Gate
 import Quantum.QProcessor.Manipulator
 
 {-
-q0: |0>--H--*--*--@==
+q0: |0>--H--*--*--@--
             |  |
-q1: |1>-----*--⊕--@==
+q1: |1>-----*--⊕--@--
             |
-q2: |0>-----⊕-----@==
+q2: |0>-----⊕-----@--
 -}
 program :: Manipulator [Bit]
 program = do
